@@ -1,10 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import Image from "next/image";
 import Carousel from "@/components/Carousel";
 import { fetchCategoryPreview } from "@/lib/productsService";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-
-export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const categories = [
