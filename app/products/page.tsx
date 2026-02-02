@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { fetchProducts } from "@/lib/productsService";
 import FilterClient from "./FilterClient";
 
