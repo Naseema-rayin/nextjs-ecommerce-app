@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Image from "next/image";
 import { fetchProductById } from "@/lib/productsService";
 import { AddToCartButton } from "@/components/add-to-cart-button";
