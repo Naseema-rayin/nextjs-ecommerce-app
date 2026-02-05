@@ -1,4 +1,4 @@
-const BASE_URL = "https://fakestoreapi.com";
+const BASE_URL = "https://dummyjson.com";
 
 const fetchOptions: RequestInit = {
   method: "GET",
@@ -12,58 +12,71 @@ const fetchOptions: RequestInit = {
 async function safeFetch(url: string) {
   try {
     const res = await fetch(url, fetchOptions);
+    if (!res.ok) return null;
 
-    if (!res.ok) {
-      console.error("API returned non-OK:", res.status);
-      return null;
-    }
-
-    let data;
-    try {
-      data = await res.json();
-    } catch (err) {
-      console.error("JSON parse failed:", err);
-      return null;
-    }
-
+    const data = await res.json();
     return data;
-  } catch (err) {
-    console.error("Fetch failed:", err);
+  } catch {
     return null;
   }
 }
 
-export async function fetchProducts(category?: string) {
-  const url = category
-    ? `${BASE_URL}/products/category/${decodeURIComponent(category)}`
-    : `${BASE_URL}/products`;
+// All categories you want to support
+const ALL_CATEGORIES = [
+  "smartphones",
+  "laptops",
+  "fragrances",
+  "skincare",
+  "groceries",
+  "home-decoration",
+  "furniture",
+  "tops",
+  "bottoms",
+  "shoes",
+];
 
-  const data = await safeFetch(url);
-  if (!data) return [];
-
-  return data.map((p: any) => ({
+// Normalize image fields
+function normalizeProduct(p: any) {
+  return {
     ...p,
-    image: p.image?.replace("http://", "https://"),
-  }));
+    image:
+      p.thumbnail ||
+      p.images?.[0] ||
+      p.productImages?.[0] ||
+      p.productImage ||
+      p.image ||
+      "/placeholder.png",
+  };
+}
+
+export async function fetchProducts(category?: string) {
+  if (category) {
+    const decoded = decodeURIComponent(category);
+    const data = await safeFetch(`${BASE_URL}/products/category/${decoded}`);
+    if (!data) return [];
+    return data.products.map(normalizeProduct);
+  }
+
+  // Fetch ALL categories manually
+  const results = await Promise.all(
+    ALL_CATEGORIES.map((cat) =>
+      safeFetch(`${BASE_URL}/products/category/${cat}`)
+    )
+  );
+
+  const merged = results.flatMap((d) => d?.products || []);
+  return merged.map(normalizeProduct);
 }
 
 export async function fetchProductById(id: string) {
   const data = await safeFetch(`${BASE_URL}/products/${id}`);
   if (!data) return null;
-
-  return {
-    ...data,
-    image: data.image?.replace("http://", "https://"),
-  };
+  return normalizeProduct(data);
 }
 
 export async function fetchCategoryPreview(category: string, limit = 4) {
   const decoded = decodeURIComponent(category);
   const data = await safeFetch(`${BASE_URL}/products/category/${decoded}`);
   if (!data) return [];
-
-  return data.slice(0, limit).map((p: any) => ({
-    ...p,
-    image: p.image?.replace("http://", "https://"),
-  }));
+  return data.products.slice(0, limit).map(normalizeProduct);
 }
